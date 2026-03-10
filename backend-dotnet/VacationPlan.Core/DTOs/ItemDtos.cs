@@ -72,21 +72,10 @@ public class BulkOperationDto
     public List<Guid>? ItemIds { get; set; }
 }
 
-/// <summary>
-/// DTO for item query parameters
-/// </summary>
-public class ItemQueryDto
+public class BulkItemDto
 {
-    public string? Category { get; set; }
-}
-
-/// <summary>
-/// DTO for bulk operation response
-/// </summary>
-public class BulkOperationResponse
-{
-    public string Message { get; set; } = string.Empty;
-    public int Processed { get; set; }
+    public Guid Id { get; set; }
+    public int DisplayOrder { get; set; }
 }
 
 /// <summary>

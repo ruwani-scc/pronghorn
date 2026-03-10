@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using VacationPlan.Core.DTOs;
 using VacationPlan.Core.Interfaces;
+using VacationPlan.Core.Models;
 using System.Security.Claims;
 
 namespace VacationPlan.API.Controllers;
@@ -14,17 +15,17 @@ namespace VacationPlan.API.Controllers;
 [Authorize]
 public class ItinerariesController : ControllerBase
 {
-    private readonly IItineraryService _itineraryService;
-    private readonly IItemService _itemService;
+    private readonly IItineraryRepository _itineraryRepository;
+    private readonly IItemRepository _itemRepository;
     private readonly ILogger<ItinerariesController> _logger;
 
     public ItinerariesController(
-        IItineraryService itineraryService,
-        IItemService itemService,
+        IItineraryRepository itineraryRepository,
+        IItemRepository itemRepository,
         ILogger<ItinerariesController> logger)
     {
-        _itineraryService = itineraryService;
-        _itemService = itemService;
+        _itineraryRepository = itineraryRepository;
+        _itemRepository = itemRepository;
         _logger = logger;
     }
 
@@ -33,6 +34,7 @@ public class ItinerariesController : ControllerBase
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         return Guid.Parse(userIdClaim ?? throw new UnauthorizedAccessException("User ID not found"));
     }
+
     /// <summary>
     /// Get all itineraries for the authenticated user
     /// </summary>
@@ -41,10 +43,27 @@ public class ItinerariesController : ControllerBase
     public async Task<IActionResult> GetItineraries([FromQuery] ItineraryQueryDto query)
     {
         var userId = GetUserId();
-        var result = await _itineraryService.GetUserItinerariesAsync(
+        var itineraries = await _itineraryRepository.GetUserItinerariesAsync(
             userId, query.Limit, query.Offset, query.SortBy, query.SortOrder);
+        
+        var count = await _itineraryRepository.GetCountAsync(userId);
 
-        return Ok(ApiResponse<ListResponse<ItineraryResponseDto>>.SuccessResponse(result));
+        var response = itineraries.Select(i => new ItineraryResponseDto
+        {
+            Id = i.Id,
+            UserId = i.UserId,
+            Title = i.Title,
+            Destination = i.Destination,
+            StartDate = i.StartDate,
+            EndDate = i.EndDate,
+            Description = i.Description,
+            CreatedAt = i.CreatedAt,
+            UpdatedAt = i.UpdatedAt,
+            DurationDays = i.DurationDays
+        }).ToList();
+
+        return Ok(ApiResponse<ListResponse<ItineraryResponseDto>>.SuccessResponse(
+            new ListResponse<ItineraryResponseDto> { Data = response, Count = count }));
     }
 
     /// <summary>
@@ -56,12 +75,26 @@ public class ItinerariesController : ControllerBase
     public async Task<IActionResult> GetItinerary(Guid id)
     {
         var userId = GetUserId();
-        var result = await _itineraryService.GetItineraryByIdAsync(id, userId);
+        var itinerary = await _itineraryRepository.GetByIdAndUserAsync(id, userId);
 
-        if (result == null)
+        if (itinerary == null)
             return NotFound(ApiResponse<object>.ErrorResponse("Itinerary not found"));
 
-        return Ok(ApiResponse<ItineraryResponseDto>.SuccessResponse(result));
+        var response = new ItineraryResponseDto
+        {
+            Id = itinerary.Id,
+            UserId = itinerary.UserId,
+            Title = itinerary.Title,
+            Destination = itinerary.Destination,
+            StartDate = itinerary.StartDate,
+            EndDate = itinerary.EndDate,
+            Description = itinerary.Description,
+            CreatedAt = itinerary.CreatedAt,
+            UpdatedAt = itinerary.UpdatedAt,
+            DurationDays = itinerary.DurationDays
+        };
+
+        return Ok(ApiResponse<ItineraryResponseDto>.SuccessResponse(response));
     }
 
     /// <summary>
@@ -73,86 +106,24 @@ public class ItinerariesController : ControllerBase
     public async Task<IActionResult> CreateItinerary([FromBody] CreateItineraryDto dto)
     {
         var userId = GetUserId();
-        var result = await _itineraryService.CreateItineraryAsync(userId, dto);
 
-        return CreatedAtAction(nameof(GetItinerary), new { id = result.Id },
-            ApiResponse<ItineraryResponseDto>.SuccessResponse(result, "Itinerary created successfully"));
-    }
-
-    /// <summary>
-    /// Update an existing itinerary
-    /// </summary>
-    [HttpPut("{id}")]
-    [ProducesResponseType(typeof(ApiResponse<ItineraryResponseDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdateItinerary(Guid id, [FromBody] UpdateItineraryDto dto)
-    {
-        var userId = GetUserId();
-        var result = await _itineraryService.UpdateItineraryAsync(id, userId, dto);
-
-        if (result == null)
-            return NotFound(ApiResponse<object>.ErrorResponse("Itinerary not found"));
-
-        return Ok(ApiResponse<ItineraryResponseDto>.SuccessResponse(result, "Itinerary updated successfully"));
-    }
-
-    /// <summary>
-    /// Delete an itinerary
-    /// </summary>
-    [HttpDelete("{id}")]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> DeleteItinerary(Guid id)
-    {
-        var userId = GetUserId();
-        var deleted = await _itineraryService.DeleteItineraryAsync(id, userId);
-
-        if (!deleted)
-            return NotFound(ApiResponse<object>.ErrorResponse("Itinerary not found"));
-    /// <summary>
-    /// Get all items for an itinerary
-    /// </summary>
-    [HttpGet("{id}/items")]
-    [ProducesResponseType(typeof(ApiResponse<ListResponse<ItemResponseDto>>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetItineraryItems(Guid id, [FromQuery] ItemQueryDto query)
-    {
-        try
+        var itinerary = new Itinerary
         {
-            var userId = GetUserId();
-            var result = await _itemService.GetItemsByItineraryAsync(id, userId, query.Category);
+            UserId = userId,
+            Title = dto.Title,
+            Destination = dto.Destination,
+            StartDate = dto.StartDate,
+            EndDate = dto.EndDate,
+            Description = dto.Description
+        };
 
-            return Ok(ApiResponse<ListResponse<ItemResponseDto>>.SuccessResponse(result));
-        }
-        catch (UnauthorizedAccessException ex)
+        var created = await _itineraryRepository.CreateAsync(itinerary);
+
+        var response = new ItineraryResponseDto
         {
-            return NotFound(ApiResponse<object>.ErrorResponse(ex.Message));
-        }
-    }
-
-    /// <summary>
-    /// Add an item to an itinerary
-    /// </summary>
-    [HttpPost("{id}/items")]
-    [ProducesResponseType(typeof(ApiResponse<ItemResponseDto>), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> AddItem(Guid id, [FromBody] CreateItemDto dto)
-    {
-        try
-        {
-            var userId = GetUserId();
-            var result = await _itemService.CreateItemAsync(id, userId, dto);
-
-            return CreatedAtAction(nameof(ItemsController.GetItem), "Items", new { id = result.Id },
-                ApiResponse<ItemResponseDto>.SuccessResponse(result, "Item created successfully"));
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return NotFound(ApiResponse<object>.ErrorResponse(ex.Message));
-        }
-    }
-}
-
+            Id = created.Id,
+            UserId = created.UserId,
+            Title = created.Title,
             Destination = created.Destination,
             StartDate = created.StartDate,
             EndDate = created.EndDate,

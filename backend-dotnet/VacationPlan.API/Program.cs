@@ -33,18 +33,14 @@ try
     builder.Services.AddValidatorsFromAssemblyContaining<CreateItineraryValidator>();
 
     // Configure Database
-     builder.Services.AddDbContext<VacationPlanDbContext>(options =>
+    builder.Services.AddDbContext<VacationPlanDbContext>(options =>
         options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-        
+
     // Register repositories
     builder.Services.AddScoped<IItineraryRepository, ItineraryRepository>();
     builder.Services.AddScoped<IItemRepository, ItemRepository>();
     builder.Services.AddScoped<IUserRepository, UserRepository>();
-
-    // Register services (Business Logic Layer)
-    builder.Services.AddScoped<IItineraryService, VacationPlan.Core.Services.ItineraryService>();
-    builder.Services.AddScoped<IItemService, VacationPlan.Core.Services.ItemService>();
-
+    builder.Services.AddScoped<IItemRepository, ItemRepository>();
 
     // Configure JWT Authentication
     var jwtSettings = builder.Configuration.GetSection("JwtSettings");
