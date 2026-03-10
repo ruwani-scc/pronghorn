@@ -1,0 +1,136 @@
+.itinerary-detail {
+  padding: 2rem 0;
+}
+
+.loading,
+.error {
+  text-align: center;
+  padding: 3rem;
+}
+
+.error h2 {
+  color: #f44336;
+  margin-bottom: 1rem;
+}
+
+.detail-header {
+  background: #1a1a1a;
+  border-radius: 8px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.header-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.header-main h1 {
+  margin: 0;
+}
+
+.status-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  color: white;
+  text-transform: capitalize;
+  font-weight: 600;
+}
+
+.header-info {
+  margin-bottom: 1rem;
+}
+
+.destination,
+.dates,
+.budget {
+  margin: 0.5rem 0;
+  font-size: 1.1rem;
+}
+
+.description {
+  margin: 1rem 0;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.header-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.detail-content {
+  display: grid;
+  grid-template-columns: 1fr 350px;
+  gap: 2rem;
+}
+
+.main-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.section {
+  background: #1a1a1a;
+  border-radius: 8px;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.section h2 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+}
+
+.sidebar {
+  position: sticky;
+  top: 2rem;
+  height: fit-content;
+}
+
+@media (prefers-color-scheme: light) {
+  .detail-header {
+    background: #ffffff;
+  }
+
+  .section {
+    background: #ffffff;
+  }
+
+  .description {
+    color: rgba(0, 0, 0, 0.7);
+  }
+}
+
+@media (max-width: 1024px) {
+  .detail-content {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: static;
+  }
+}
+
+@media (max-width: 768px) {
+  .header-main {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .header-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .header-actions .btn {
+    width: 100%;
+  }
+}

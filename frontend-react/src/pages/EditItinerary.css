@@ -1,0 +1,16 @@
+.edit-itinerary {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 0;
+}
+
+.loading,
+.error {
+  text-align: center;
+  padding: 3rem;
+}
+
+.error h2 {
+  color: #f44336;
+  margin-bottom: 1rem;
+}
