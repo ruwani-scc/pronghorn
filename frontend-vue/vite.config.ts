@@ -4,32 +4,30 @@ import vue from '@vitejs/plugin-vue'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [
-    vue(),
-  ],
+  plugins: [vue()],
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url))
-    }
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
+    },
   },
   server: {
     port: 5174,
     proxy: {
-      '/api': {
-        target: 'http://localhost:3000',
-        changeOrigin: true
-      }
-    }
+      "/api": {
+        target: "http://localhost:7001",
+        changeOrigin: true,
+      },
+    },
   },
   build: {
-    target: 'esnext',
+    target: "esnext",
     sourcemap: true,
     rollupOptions: {
       output: {
         manualChunks: {
-          'vendor': ['vue', 'vue-router'],
-        }
-      }
-    }
-  }
-})
+          vendor: ["vue", "vue-router"],
+        },
+      },
+    },
+  },
+});

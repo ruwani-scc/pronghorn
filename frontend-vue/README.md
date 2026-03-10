@@ -46,7 +46,7 @@ cp .env.example .env
 4. Update the `.env` file with your configuration:
 
 ```env
-VITE_API_BASE_URL=http://localhost:3000/api/v1
+VITE_API_BASE_URL=http://localhost:7001/api/v1
 ```
 
 ## 🚀 Development
