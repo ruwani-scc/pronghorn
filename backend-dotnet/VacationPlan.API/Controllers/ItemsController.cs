@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using VacationPlan.Core.DTOs;
 using VacationPlan.Core.Interfaces;
-using VacationPlan.Core.Models;
 using System.Security.Claims;
 
 namespace VacationPlan.API.Controllers;
@@ -15,14 +14,14 @@ namespace VacationPlan.API.Controllers;
 [Authorize]
 public class ItemsController : ControllerBase
 {
-    private readonly IItemRepository _itemRepository;
+    private readonly IItemService _itemService;
     private readonly ILogger<ItemsController> _logger;
 
     public ItemsController(
-        IItemRepository itemRepository,
+        IItemService itemService,
         ILogger<ItemsController> logger)
     {
-        _itemRepository = itemRepository;
+        _itemService = itemService;
         _logger = logger;
     }
 
@@ -32,6 +31,7 @@ public class ItemsController : ControllerBase
         return Guid.Parse(userIdClaim ?? throw new UnauthorizedAccessException("User ID not found"));
     }
 
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
     /// <summary>
     /// Get a single item by ID
     /// </summary>
@@ -40,33 +40,20 @@ public class ItemsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetItem(Guid id)
     {
-        var userId = GetUserId();
-        var item = await _itemRepository.GetByIdAsync(id);
-
-        if (item == null || !await _itemRepository.BelongsToUserAsync(id, userId))
-            return NotFound(ApiResponse<object>.ErrorResponse("Item not found"));
-
-        var response = new ItemResponseDto
+        try
         {
-            Id = item.Id,
-            ItineraryId = item.ItineraryId,
-            Category = item.Category,
-            Title = item.Title,
-            Description = item.Description,
-            StartDatetime = item.StartDatetime,
-            EndDatetime = item.EndDatetime,
-            Location = item.Location,
-            ConfirmationCode = item.ConfirmationCode,
-            Cost = item.Cost,
-            Currency = item.Currency,
-            Metadata = item.MetadataDict,
-            DisplayOrder = item.DisplayOrder,
-            IsCompleted = item.IsCompleted,
-            CreatedAt = item.CreatedAt,
-            UpdatedAt = item.UpdatedAt
-        };
+            var userId = GetUserId();
+            var result = await _itemService.GetItemByIdAsync(id, userId);
 
-        return Ok(ApiResponse<ItemResponseDto>.SuccessResponse(response));
+            if (result == null)
+                return NotFound(ApiResponse<object>.ErrorResponse("Item not found"));
+
+            return Ok(ApiResponse<ItemResponseDto>.SuccessResponse(result));
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return NotFound(ApiResponse<object>.ErrorResponse(ex.Message));
+        }
     }
 
     /// <summary>
@@ -77,62 +64,17 @@ public class ItemsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateItem(Guid id, [FromBody] UpdateItemDto dto)
     {
-        var userId = GetUserId();
-        var item = await _itemRepository.GetByIdAsync(id);
-
-        if (item == null || !await _itemRepository.BelongsToUserAsync(id, userId))
-            return NotFound(ApiResponse<object>.ErrorResponse("Item not found"));
-
-        if (!string.IsNullOrEmpty(dto.Category))
-            item.Category = dto.Category.ToLower();
-        if (!string.IsNullOrEmpty(dto.Title))
-            item.Title = dto.Title;
-        if (dto.Description != null)
-            item.Description = dto.Description;
-        if (dto.StartDatetime.HasValue)
-            item.StartDatetime = dto.StartDatetime;
-        if (dto.EndDatetime.HasValue)
-            item.EndDatetime = dto.EndDatetime;
-        if (dto.Location != null)
-            item.Location = dto.Location;
-        if (dto.ConfirmationCode != null)
-            item.ConfirmationCode = dto.ConfirmationCode;
-        if (dto.Cost.HasValue)
-            item.Cost = dto.Cost;
-        if (!string.IsNullOrEmpty(dto.Currency))
-            item.Currency = dto.Currency;
-        if (dto.Metadata != null)
-            item.MetadataDict = dto.Metadata;
-        if (dto.DisplayOrder.HasValue)
-            item.DisplayOrder = dto.DisplayOrder.Value;
-        if (dto.IsCompleted.HasValue)
-            item.IsCompleted = dto.IsCompleted.Value;
-
-        var updated = await _itemRepository.UpdateAsync(item);
-
-        var response = new ItemResponseDto
+        try
         {
-            Id = updated.Id,
-            ItineraryId = updated.ItineraryId,
-            Category = updated.Category,
-            Title = updated.Title,
-            Description = updated.Description,
-            StartDatetime = updated.StartDatetime,
-            EndDatetime = updated.EndDatetime,
-            Location = updated.Location,
-            ConfirmationCode = updated.ConfirmationCode,
-            Cost = updated.Cost,
-            Currency = updated.Currency,
-            Metadata = updated.MetadataDict,
-            DisplayOrder = updated.DisplayOrder,
-            IsCompleted = updated.IsCompleted,
-            CreatedAt = updated.CreatedAt,
-            UpdatedAt = updated.UpdatedAt
-        };
+            var userId = GetUserId();
+            var result = await _itemService.UpdateItemAsync(id, userId, dto);
 
-        return Ok(ApiResponse<ItemResponseDto>.SuccessResponse(response, "Item updated successfully"));
-    }
+            if (result == null)
+                return NotFound(ApiResponse<object>.ErrorResponse("Item not found"));
 
+            return Ok(ApiResponse<ItemResponseDto>.SuccessResponse(result, "Item updated successfully"));
+        }
+        catch (UnauthorizedAccessException ex)
     /// <summary>
     /// Delete an item
     /// </summary>
@@ -141,6 +83,48 @@ public class ItemsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteItem(Guid id)
     {
+        try
+        {
+            var userId = GetUserId();
+            var deleted = await _itemService.DeleteItemAsync(id, userId);
+
+            if (!deleted)
+                return NotFound(ApiResponse<object>.ErrorResponse("Item not found"));
+
+            return Ok(ApiResponse<object>.SuccessResponse(null, "Item deleted successfully"));
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return NotFound(ApiResponse<object>.ErrorResponse(ex.Message));
+        }
+    }
+
+    /// <summary>
+    /// Bulk operations on items (reorder, bulk delete)
+    /// </summary>
+    [HttpPost("bulk")]
+    [ProducesResponseType(typeof(ApiResponse<BulkOperationResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> BulkOperation([FromBody] BulkOperationDto dto)
+    {
+        try
+        {
+            var userId = GetUserId();
+            var result = await _itemService.BulkOperationAsync(userId, dto);
+
+            return Ok(ApiResponse<BulkOperationResponse>.SuccessResponse(result));
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ApiResponse<object>.ErrorResponse(ex.Message));
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return NotFound(ApiResponse<object>.ErrorResponse(ex.Message));
+        }
+    }
+}
+
         var userId = GetUserId();
         var belongsToUser = await _itemRepository.BelongsToUserAsync(id, userId);
 
