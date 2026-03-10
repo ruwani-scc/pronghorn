@@ -6,7 +6,7 @@
     <Name>VacationPlan.Database</Name>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectVersion>4.1</ProjectVersion>
-    <ProjectGuid>{A7B5C8D9-1234-5678-9ABC-DEF012345678}</ProjectGuid>
+    <ProjectGuid>{a7b5c8d9-1234-5678-9abc-def012345678}</ProjectGuid>
     <DSP>Microsoft.Data.Tools.Schema.Sql.Sql150DatabaseSchemaProvider</DSP>
     <OutputType>Database</OutputType>
     <RootPath>

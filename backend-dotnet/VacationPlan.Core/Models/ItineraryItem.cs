@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json;
@@ -76,11 +77,11 @@ public class ItineraryItem
     [NotMapped]
     public Dictionary<string, object>? MetadataDict
     {
-        get => string.IsNullOrEmpty(Metadata) 
-            ? null 
+        get => string.IsNullOrEmpty(Metadata)
+            ? null
             : JsonSerializer.Deserialize<Dictionary<string, object>>(Metadata);
-        set => Metadata = value == null 
-            ? null 
+        set => Metadata = value == null
+            ? null
             : JsonSerializer.Serialize(value);
     }
 }
@@ -94,7 +95,7 @@ public static class ItemCategory
     public const string Activity = "activity";
     public const string Transport = "transport";
 
-    public static readonly string[] ValidCategories = 
+    public static readonly string[] ValidCategories =
     {
         Accommodation,
         Activity,

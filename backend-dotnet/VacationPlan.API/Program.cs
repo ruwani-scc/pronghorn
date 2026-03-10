@@ -34,7 +34,7 @@ try
 
     // Configure Database
     builder.Services.AddDbContext<VacationPlanDbContext>(options =>
-        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
     // Register repositories
     builder.Services.AddScoped<IItineraryRepository, ItineraryRepository>();
