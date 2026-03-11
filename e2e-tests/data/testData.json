@@ -1,0 +1,46 @@
+{
+  "searchQueries": [
+    {
+      "query": "Playwright",
+      "expectedResults": 5
+    },
+    {
+      "query": "TypeScript",
+      "expectedResults": 10
+    },
+    {
+      "query": "Testing",
+      "expectedResults": 15
+    }
+  ],
+  "dashboardFilters": [
+    {
+      "filterText": "Active",
+      "expectedCount": 20
+    },
+    {
+      "filterText": "Inactive",
+      "expectedCount": 5
+    },
+    {
+      "filterText": "Pending",
+      "expectedCount": 8
+    }
+  ],
+  "formData": [
+    {
+      "firstName": "John",
+      "lastName": "Doe",
+      "email": "john.doe@example.com",
+      "phone": "123-456-7890",
+      "message": "Test message 1"
+    },
+    {
+      "firstName": "Jane",
+      "lastName": "Smith",
+      "email": "jane.smith@example.com",
+      "phone": "098-765-4321",
+      "message": "Test message 2"
+    }
+  ]
+}
